@@ -1,0 +1,50 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "Ran Sagy",
+    "longName": "Musica For Pebble",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/headphones-8x.png",
+                "name": "HEADPHONES_ICON",
+                "type": "png-trans"
+            },
+            {
+                "file": "images/media-step-forward-2x.png",
+                "name": "MEDIA_FORWARD_ICON",
+                "type": "png-trans"
+            },
+            {
+                "file": "images/media-step-backward-2x.png",
+                "name": "MEDIA_BACKWARD_ICON",
+                "type": "png-trans"
+            },
+            {
+                "file": "images/media-play-2x.png",
+                "name": "MEDIA_PLAY_ICON",
+                "type": "png-trans"
+            },
+            {
+                "file": "images/media-pause-2x.png",
+                "name": "MEDIA_PAUSE_ICON",
+                "type": "png-trans"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "Musica",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
+    "uuid": "71bfc6b0-3969-463d-857b-14ad6004224b",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
