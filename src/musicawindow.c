@@ -1,5 +1,10 @@
 #include "musicawindow.h"
 #include <pebble.h>
+  
+static bool bIsPlayingState = false;
+static bool bIsVolumeState = false;
+static GBitmap *s_res_media_volumeup_icon_white;
+static GBitmap *s_res_media_volumedown_icon_white;
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
@@ -32,19 +37,19 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_ActionBarLayer);
   
   // s_ArtistTextLayer
-  s_ArtistTextLayer = text_layer_create(GRect(3, 0, 120, 36));
+  s_ArtistTextLayer = text_layer_create(GRect(3, 0, 120, 40));
   text_layer_set_text(s_ArtistTextLayer, "Artist");
   text_layer_set_font(s_ArtistTextLayer, s_res_gothic_18);
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_ArtistTextLayer);
   
   // s_TrackTextLayer
-  s_TrackTextLayer = text_layer_create(GRect(3, 52, 120, 46));
+  s_TrackTextLayer = text_layer_create(GRect(3, 52, 120, 55));
   text_layer_set_text(s_TrackTextLayer, "Track Title");
   text_layer_set_font(s_TrackTextLayer, s_res_gothic_24_bold);
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_TrackTextLayer);
   
   // s_AlbumTextLayer
-  s_AlbumTextLayer = text_layer_create(GRect(3, 115, 120, 36));
+  s_AlbumTextLayer = text_layer_create(GRect(3, 110, 120, 40));
   text_layer_set_text(s_AlbumTextLayer, "Album");
   text_layer_set_font(s_AlbumTextLayer, s_res_gothic_18);
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_AlbumTextLayer);
@@ -63,27 +68,53 @@ static void destroy_ui(void) {
 // END AUTO-GENERATED UI CODE
 
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(s_ArtistTextLayer, "Loooooong Artist");
-  text_layer_set_text(s_TrackTextLayer, "Loooooong Track Title");
-  text_layer_set_text(s_AlbumTextLayer, "Loooooong Album");
+  if (bIsVolumeState) {
+    action_bar_layer_set_icon(s_ActionBarLayer, BUTTON_ID_UP, s_res_media_backward_icon_white);
+    action_bar_layer_set_icon(s_ActionBarLayer, BUTTON_ID_DOWN, s_res_media_forward_icon_white);
+  } else {
+    action_bar_layer_set_icon(s_ActionBarLayer, BUTTON_ID_UP, s_res_media_volumeup_icon_white);
+    action_bar_layer_set_icon(s_ActionBarLayer, BUTTON_ID_DOWN, s_res_media_volumedown_icon_white);
+  }
+  
+  bIsVolumeState = !bIsVolumeState;
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(s_ArtistTextLayer, "Artist");
-  text_layer_set_text(s_TrackTextLayer, "Track Title");
-  text_layer_set_text(s_AlbumTextLayer, "Album");
+  if (bIsPlayingState) {
+    text_layer_set_text(s_ArtistTextLayer, "No");
+    text_layer_set_text(s_TrackTextLayer, "Music");
+    text_layer_set_text(s_AlbumTextLayer, "Playing");
+  } else {
+    text_layer_set_text(s_ArtistTextLayer, "Loooooooooooooooooooooooooong Artist");
+    text_layer_set_text(s_TrackTextLayer, "Looooooooooooooong Track Title");
+    text_layer_set_text(s_AlbumTextLayer, "Loooooooooooooooooooooooooong Album");
+  }
+  
+  bIsPlayingState = !bIsPlayingState;
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(s_ArtistTextLayer, "Prev. Artist");
-  text_layer_set_text(s_TrackTextLayer, "Prev. Track Title");
-  text_layer_set_text(s_AlbumTextLayer, "Prev. Album");
+  if (bIsVolumeState) {
+    text_layer_set_text(s_ArtistTextLayer, "Volume");
+    text_layer_set_text(s_TrackTextLayer, "Going");
+    text_layer_set_text(s_AlbumTextLayer, "Up");
+  } else {
+    text_layer_set_text(s_ArtistTextLayer, "Prev. Artist");
+    text_layer_set_text(s_TrackTextLayer, "Prev. Track Title");
+    text_layer_set_text(s_AlbumTextLayer, "Prev. Album");
+  }
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(s_ArtistTextLayer, "Next Artist");
-  text_layer_set_text(s_TrackTextLayer, "Next Track Title");
-  text_layer_set_text(s_AlbumTextLayer, "Next Album");
+  if (bIsVolumeState) {
+    text_layer_set_text(s_ArtistTextLayer, "Volume");
+    text_layer_set_text(s_TrackTextLayer, "Going");
+    text_layer_set_text(s_AlbumTextLayer, "Down");
+  } else {
+    text_layer_set_text(s_ArtistTextLayer, "Next Artist");
+    text_layer_set_text(s_TrackTextLayer, "Next Track Title");
+    text_layer_set_text(s_AlbumTextLayer, "Next Album");
+  }
 }
 
 static void s_click_config_provider(void *context) {
@@ -95,10 +126,13 @@ static void s_click_config_provider(void *context) {
 }
 
 static void handle_window_load(Window* window) {
+  s_res_media_volumeup_icon_white = gbitmap_create_with_resource(RESOURCE_ID_MEDIA_VOLUMEUP_ICON_WHITE);
+  s_res_media_volumedown_icon_white = gbitmap_create_with_resource(RESOURCE_ID_MEDIA_VOLUMEDOWN_ICON_WHITE);
+  
   action_bar_layer_set_click_config_provider(s_ActionBarLayer, (ClickConfigProvider)s_click_config_provider);
-  text_layer_set_overflow_mode(s_AlbumTextLayer, GTextOverflowModeWordWrap);
-  text_layer_set_overflow_mode(s_TrackTextLayer, GTextOverflowModeWordWrap);
-  text_layer_set_overflow_mode(s_ArtistTextLayer, GTextOverflowModeWordWrap);
+  text_layer_set_overflow_mode(s_AlbumTextLayer, GTextOverflowModeFill);
+  text_layer_set_overflow_mode(s_TrackTextLayer, GTextOverflowModeFill);
+  text_layer_set_overflow_mode(s_ArtistTextLayer, GTextOverflowModeFill);
 }
 
 static void handle_window_unload(Window* window) {

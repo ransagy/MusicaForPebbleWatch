@@ -9,9 +9,20 @@
     "resources": {
         "media": [
             {
-                "file": "images/headphones-8x.png",
-                "name": "HEADPHONES_ICON",
+                "file": "images/volume-low-2x.png",
+                "name": "MEDIA_VOLUMEDOWN_ICON",
                 "type": "png-trans"
+            },
+            {
+                "file": "images/volume-high-2x.png",
+                "name": "MEDIA_VOLUMEUP_ICON",
+                "type": "png-trans"
+            },
+            {
+                "file": "images/headphones-8x.png",
+                "menuIcon": true,
+                "name": "HEADPHONES_ICON",
+                "type": "png"
             },
             {
                 "file": "images/media-step-forward-2x.png",
