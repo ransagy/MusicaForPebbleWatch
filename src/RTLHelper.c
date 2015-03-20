@@ -36,9 +36,9 @@ char *utf8rev(char *str)
 
 void TextLayerSetTextRTLAware(TextLayer* layer, const char* text) {
   if (TextStartsWithRTL(text)) {
-    char* newText = malloc(strlen(text)+1);
-    strncpy(newText,text,strlen(text));
-    text_layer_set_text(layer, utf8rev(newText));
+    //char* newText = malloc(strlen(text)+1);
+    //strncpy(newText,text,strlen(text));
+    text_layer_set_text(layer, text); //text_layer_set_text(layer, utf8rev(newText));
     text_layer_set_text_alignment(layer, GTextAlignmentRight);
     //free(newText);
   } else {
