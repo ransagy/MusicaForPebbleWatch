@@ -7,16 +7,17 @@ static bool bIsPlayingState = false;
 static bool bIsVolumeState = false;
 static GBitmap *s_res_media_volup_icon;
 static GBitmap *s_res_media_voldown_icon;
-static char tempText[100] = "בדיקה";
 
-static AppSync s_sync;
-static uint8_t s_sync_buffer[500];
-
-enum CurrentMetadataKey {
-  META_ARTIST_KEY = 0x0,  // TUPLE_CSTRING
-  META_TRACK_KEY = 0x1,   // TUPLE_CSTRING
-  META_ALBUM_KEY = 0x2,   // TUPLE_CSTRING
-  META_ACTION_KEY = 0x3,  // TUPLE_INT
+enum AppKeys {
+  META_ARTIST_KEY = 0x0,       // TUPLE_CSTRING
+  META_TRACK_KEY = 0x1,        // TUPLE_CSTRING
+  META_ALBUM_KEY = 0x2,        // TUPLE_CSTRING
+  ACTION_PLAYPAUSE_KEY = 0x3,  // TUPLE_INT32
+  ACTION_INIT_KEY = 0x4,       // TUPLE_INT32
+  ACTION_BACKWARD_KEY = 0x5,   // TUPLE_INT32
+  ACTION_FORWARD_KEY = 0x6,    // TUPLE_INT32
+  ACTION_VOLDOWN_KEY = 0x7,    // TUPLE_INT32
+  ACTION_VOLUP_KEY = 0x8       // TUPLE_INT32
 };
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
@@ -83,6 +84,20 @@ static void destroy_ui(void) {
 }
 // END AUTO-GENERATED UI CODE
 
+static void sendToPhone(Tuplet *data) {
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+  
+  if (iter == NULL) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "null iterator received from app_message_outbox_begin!");
+    return;
+  }
+
+  dict_write_tuplet(iter, data);
+  dict_write_end(iter);
+  app_message_outbox_send();
+}
+
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
   if (bIsVolumeState) {
     action_bar_layer_set_icon(s_ActionBarLayer, BUTTON_ID_UP, s_res_media_backward_icon);
@@ -96,28 +111,34 @@ static void select_long_click_handler(ClickRecognizerRef recognizer, void *conte
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  if (bIsPlayingState) {
-    // Handle pausing here.
-  } else {
-    // Handle playing here.
-  }
+  Tuplet tuple = TupletInteger(ACTION_PLAYPAUSE_KEY, (bIsPlayingState ? 0 : 1));
+  sendToPhone(&tuple);
   
+  // Toggle playing state.
   bIsPlayingState = !bIsPlayingState;
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
   if (bIsVolumeState) {
     // Handle volume up here.
+    Tuplet tuple = TupletInteger(ACTION_VOLUP_KEY, 0);
+    sendToPhone(&tuple);
   } else {
     // Handle prev track here.
+    Tuplet tuple = TupletInteger(ACTION_BACKWARD_KEY, 0);
+    sendToPhone(&tuple);
   }
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   if (bIsVolumeState) {
     // Handle volume down here.
+    Tuplet tuple = TupletInteger(ACTION_VOLDOWN_KEY, 0);
+    sendToPhone(&tuple);
   } else {
     // Handle next track here.
+    Tuplet tuple = TupletInteger(ACTION_FORWARD_KEY, 0);
+    sendToPhone(&tuple);
   }
 }
 
@@ -128,43 +149,54 @@ static void s_click_config_provider(void *context) {
   window_long_click_subscribe(BUTTON_ID_SELECT, 0, select_long_click_handler, NULL);
 }
 
-static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
+static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Message received!");
   
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "App Message Sync callback with key : %"PRIu32"", key);
-  
-  // If we got this from the companion app, we should be in playing mode.
-  bIsPlayingState = true;
-  
-  switch (key) {
-    case META_ARTIST_KEY:
-    TextLayerSetTextRTLAware(s_ArtistTextLayer, new_tuple->value->cstring);
-    break;
-    case META_TRACK_KEY:
-    TextLayerSetTextRTLAware(s_TrackTextLayer, new_tuple->value->cstring);
-    break;
-    case META_ALBUM_KEY:
-    TextLayerSetTextRTLAware(s_AlbumTextLayer, new_tuple->value->cstring);
-    break;
+  // Get the first pair
+  Tuple *t = dict_read_first(iterator);
+
+  // Process all pairs present
+  while(t != NULL) {
+    // Process this pair's key
+    switch (t->key) {
+      // If we got any of the META keys from the companion app, we should be in playing mode.
+      case META_ARTIST_KEY:
+        TextLayerSetTextRTLAware(s_ArtistTextLayer, t->value->cstring);
+        break;
+      case META_TRACK_KEY:
+        TextLayerSetTextRTLAware(s_TrackTextLayer, t->value->cstring);
+        break;
+      case META_ALBUM_KEY:
+        TextLayerSetTextRTLAware(s_AlbumTextLayer, t->value->cstring);
+        break;
+    }
+
+    // Get next pair, if any
+    t = dict_read_next(iterator);
   }
 }
 
-static void sync_error_handler(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "App Message Sync Error: %d , Dictionary Error: %d", app_message_error, dict_error);
+static void inbox_dropped_callback(AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
+}
+
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
 static void initComms() {
+  // Register callbacks
+  app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
+  
   // Open AppMessage comms.
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-
-  // Setup initial values.
-  Tuplet initial_values[] = {
-    TupletCString(META_ARTIST_KEY, "No"),
-    TupletCString(META_TRACK_KEY, "Musica"),
-    TupletCString(META_ALBUM_KEY, "Playing"),
-  };
-
-  // Begin using AppSync.
-  app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer), initial_values, ARRAY_LENGTH(initial_values), sync_changed_handler, sync_error_handler, NULL);
 }
 
 static void handle_window_load(Window* window) {
@@ -176,15 +208,16 @@ static void handle_window_load(Window* window) {
   text_layer_set_overflow_mode(s_TrackTextLayer, GTextOverflowModeFill);
   text_layer_set_overflow_mode(s_ArtistTextLayer, GTextOverflowModeFill);
   
-  // init AppSync.
+  // init AppMessage API.
   initComms();
+  
+  // Fetch existing metadata.
+  Tuplet tuple = TupletInteger(ACTION_INIT_KEY, 0);
+  sendToPhone(&tuple);
 }
 
 static void handle_window_unload(Window* window) {
   destroy_ui();
-  
-  // Finish using AppSync
-  app_sync_deinit(&s_sync);
 }
 
 void show_musicawindow(void) {
