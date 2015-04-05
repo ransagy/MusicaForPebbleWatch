@@ -17,30 +17,108 @@ enum AppKeys {
   ACTION_BACKWARD_KEY = 0x5,   // TUPLE_INT32
   ACTION_FORWARD_KEY = 0x6,    // TUPLE_INT32
   ACTION_VOLDOWN_KEY = 0x7,    // TUPLE_INT32
-  ACTION_VOLUP_KEY = 0x8       // TUPLE_INT32
+  ACTION_VOLUP_KEY = 0x8,      // TUPLE_INT32
+  META_EXTRA_ARTIST_KEY = 0x9, // TUPLE_CSTRING
+  META_EXTRA_TRACK_KEY = 0xA,  // TUPLE_CSTRING
+  META_EXTRA_ALBUM_KEY = 0xB,  // TUPLE_CSTRING
 };
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
+static GFont s_res_gothic_24;
+static GFont s_res_gothic_28_bold;
 static GBitmap *s_res_media_backward_icon;
 static GBitmap *s_res_media_playpause_icon;
 static GBitmap *s_res_media_forward_icon;
-static GFont s_res_gothic_24;
-static GFont s_res_gothic_28_bold;
-static ActionBarLayer *s_ActionBarLayer;
-static TextLayer *s_ArtistTextLayer;
-static TextLayer *s_TrackTextLayer;
 static TextLayer *s_AlbumTextLayer;
+static TextLayer *s_TrackTextLayer;
+static TextLayer *s_ArtistTextLayer;
+static TextLayer *s_RTL_AlbumSecondTextLayer;
+static TextLayer *s_RTL_AlbumFirstTextLayer;
+static TextLayer *s_RTL_TrackSecondTextLayer;
+static TextLayer *s_RTL_TrackFirstTextLayer;
+static TextLayer *s_RTL_ArtistSecondTextLayer;
+static TextLayer *s_RTL_ArtistFirstTextLayer;
+static ActionBarLayer *s_ActionBarLayer;
 
 static void initialise_ui(void) {
   s_window = window_create();
   window_set_fullscreen(s_window, 0);
   
+  s_res_gothic_24 = fonts_get_system_font(FONT_KEY_GOTHIC_24);
+  s_res_gothic_28_bold = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
   s_res_media_backward_icon = gbitmap_create_with_resource(RESOURCE_ID_MEDIA_BACKWARD_ICON);
   s_res_media_playpause_icon = gbitmap_create_with_resource(RESOURCE_ID_MEDIA_PLAYPAUSE_ICON);
   s_res_media_forward_icon = gbitmap_create_with_resource(RESOURCE_ID_MEDIA_FORWARD_ICON);
-  s_res_gothic_24 = fonts_get_system_font(FONT_KEY_GOTHIC_24);
-  s_res_gothic_28_bold = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
+  // s_AlbumTextLayer
+  s_AlbumTextLayer = text_layer_create(GRect(3, 95, 115, 55));
+  text_layer_set_background_color(s_AlbumTextLayer, GColorClear);
+  text_layer_set_text(s_AlbumTextLayer, "Album Here");
+  text_layer_set_font(s_AlbumTextLayer, s_res_gothic_24);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_AlbumTextLayer);
+  
+  // s_TrackTextLayer
+  s_TrackTextLayer = text_layer_create(GRect(3, 40, 115, 60));
+  text_layer_set_background_color(s_TrackTextLayer, GColorClear);
+  text_layer_set_text(s_TrackTextLayer, "Fetching Music..");
+  text_layer_set_font(s_TrackTextLayer, s_res_gothic_28_bold);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_TrackTextLayer);
+  
+  // s_ArtistTextLayer
+  s_ArtistTextLayer = text_layer_create(GRect(3, -5, 115, 55));
+  text_layer_set_background_color(s_ArtistTextLayer, GColorClear);
+  text_layer_set_text(s_ArtistTextLayer, "Artist Here");
+  text_layer_set_font(s_ArtistTextLayer, s_res_gothic_24);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_ArtistTextLayer);
+  
+  // s_RTL_AlbumSecondTextLayer
+  s_RTL_AlbumSecondTextLayer = text_layer_create(GRect(3, 122, 115, 27));
+  text_layer_set_background_color(s_RTL_AlbumSecondTextLayer, GColorClear);
+  text_layer_set_text(s_RTL_AlbumSecondTextLayer, "אלבום שם");
+  text_layer_set_text_alignment(s_RTL_AlbumSecondTextLayer, GTextAlignmentRight);
+  text_layer_set_font(s_RTL_AlbumSecondTextLayer, s_res_gothic_24);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_RTL_AlbumSecondTextLayer);
+  
+  // s_RTL_AlbumFirstTextLayer
+  s_RTL_AlbumFirstTextLayer = text_layer_create(GRect(3, 100, 115, 27));
+  text_layer_set_background_color(s_RTL_AlbumFirstTextLayer, GColorClear);
+  text_layer_set_text(s_RTL_AlbumFirstTextLayer, "אלבום פה");
+  text_layer_set_text_alignment(s_RTL_AlbumFirstTextLayer, GTextAlignmentRight);
+  text_layer_set_font(s_RTL_AlbumFirstTextLayer, s_res_gothic_24);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_RTL_AlbumFirstTextLayer);
+  
+  // s_RTL_TrackSecondTextLayer
+  s_RTL_TrackSecondTextLayer = text_layer_create(GRect(3, 70, 115, 30));
+  text_layer_set_background_color(s_RTL_TrackSecondTextLayer, GColorClear);
+  text_layer_set_text(s_RTL_TrackSecondTextLayer, "למוזיקה");
+  text_layer_set_text_alignment(s_RTL_TrackSecondTextLayer, GTextAlignmentRight);
+  text_layer_set_font(s_RTL_TrackSecondTextLayer, s_res_gothic_28_bold);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_RTL_TrackSecondTextLayer);
+  
+  // s_RTL_TrackFirstTextLayer
+  s_RTL_TrackFirstTextLayer = text_layer_create(GRect(3, 40, 115, 31));
+  text_layer_set_background_color(s_RTL_TrackFirstTextLayer, GColorClear);
+  text_layer_set_text(s_RTL_TrackFirstTextLayer, "ממתין");
+  text_layer_set_text_alignment(s_RTL_TrackFirstTextLayer, GTextAlignmentRight);
+  text_layer_set_font(s_RTL_TrackFirstTextLayer, s_res_gothic_28_bold);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_RTL_TrackFirstTextLayer);
+  
+  // s_RTL_ArtistSecondTextLayer
+  s_RTL_ArtistSecondTextLayer = text_layer_create(GRect(3, 15, 115, 27));
+  text_layer_set_background_color(s_RTL_ArtistSecondTextLayer, GColorClear);
+  text_layer_set_text(s_RTL_ArtistSecondTextLayer, "אמן שם");
+  text_layer_set_text_alignment(s_RTL_ArtistSecondTextLayer, GTextAlignmentRight);
+  text_layer_set_font(s_RTL_ArtistSecondTextLayer, s_res_gothic_24);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_RTL_ArtistSecondTextLayer);
+  
+  // s_RTL_ArtistFirstTextLayer
+  s_RTL_ArtistFirstTextLayer = text_layer_create(GRect(3, -5, 115, 27));
+  text_layer_set_background_color(s_RTL_ArtistFirstTextLayer, GColorClear);
+  text_layer_set_text(s_RTL_ArtistFirstTextLayer, "אמן פה");
+  text_layer_set_text_alignment(s_RTL_ArtistFirstTextLayer, GTextAlignmentRight);
+  text_layer_set_font(s_RTL_ArtistFirstTextLayer, s_res_gothic_24);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_RTL_ArtistFirstTextLayer);
+  
   // s_ActionBarLayer
   s_ActionBarLayer = action_bar_layer_create();
   action_bar_layer_add_to_window(s_ActionBarLayer, s_window);
@@ -49,35 +127,20 @@ static void initialise_ui(void) {
   action_bar_layer_set_icon(s_ActionBarLayer, BUTTON_ID_SELECT, s_res_media_playpause_icon);
   action_bar_layer_set_icon(s_ActionBarLayer, BUTTON_ID_DOWN, s_res_media_forward_icon);
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_ActionBarLayer);
-  
-  // s_ArtistTextLayer
-  s_ArtistTextLayer = text_layer_create(GRect(3, -5, 115, 55));
-  text_layer_set_background_color(s_ArtistTextLayer, GColorClear);
-  text_layer_set_text(s_ArtistTextLayer, "Artist");
-  text_layer_set_font(s_ArtistTextLayer, s_res_gothic_24);
-  layer_add_child(window_get_root_layer(s_window), (Layer *)s_ArtistTextLayer);
-  
-  // s_TrackTextLayer
-  s_TrackTextLayer = text_layer_create(GRect(3, 40, 115, 60));
-  text_layer_set_background_color(s_TrackTextLayer, GColorClear);
-  text_layer_set_text(s_TrackTextLayer, "Track Title");
-  text_layer_set_font(s_TrackTextLayer, s_res_gothic_28_bold);
-  layer_add_child(window_get_root_layer(s_window), (Layer *)s_TrackTextLayer);
-  
-  // s_AlbumTextLayer
-  s_AlbumTextLayer = text_layer_create(GRect(3, 95, 115, 55));
-  text_layer_set_background_color(s_AlbumTextLayer, GColorClear);
-  text_layer_set_text(s_AlbumTextLayer, "Album");
-  text_layer_set_font(s_AlbumTextLayer, s_res_gothic_24);
-  layer_add_child(window_get_root_layer(s_window), (Layer *)s_AlbumTextLayer);
 }
 
 static void destroy_ui(void) {
   window_destroy(s_window);
-  action_bar_layer_destroy(s_ActionBarLayer);
-  text_layer_destroy(s_ArtistTextLayer);
-  text_layer_destroy(s_TrackTextLayer);
   text_layer_destroy(s_AlbumTextLayer);
+  text_layer_destroy(s_TrackTextLayer);
+  text_layer_destroy(s_ArtistTextLayer);
+  text_layer_destroy(s_RTL_AlbumSecondTextLayer);
+  text_layer_destroy(s_RTL_AlbumFirstTextLayer);
+  text_layer_destroy(s_RTL_TrackSecondTextLayer);
+  text_layer_destroy(s_RTL_TrackFirstTextLayer);
+  text_layer_destroy(s_RTL_ArtistSecondTextLayer);
+  text_layer_destroy(s_RTL_ArtistFirstTextLayer);
+  action_bar_layer_destroy(s_ActionBarLayer);
   gbitmap_destroy(s_res_media_backward_icon);
   gbitmap_destroy(s_res_media_playpause_icon);
   gbitmap_destroy(s_res_media_forward_icon);
@@ -149,25 +212,75 @@ static void s_click_config_provider(void *context) {
   window_long_click_subscribe(BUTTON_ID_SELECT, 0, select_long_click_handler, NULL);
 }
 
+static void clearLayers() {
+  text_layer_set_text(s_ArtistTextLayer, "");
+  text_layer_set_overflow_mode(s_ArtistTextLayer, GTextOverflowModeFill);
+  layer_set_hidden((Layer*)s_ArtistTextLayer, true);
+
+  text_layer_set_text(s_RTL_ArtistFirstTextLayer, "");
+  text_layer_set_overflow_mode(s_RTL_ArtistFirstTextLayer, GTextOverflowModeWordWrap);
+  layer_set_hidden((Layer*)s_RTL_ArtistFirstTextLayer, true);
+
+  text_layer_set_text(s_RTL_ArtistSecondTextLayer, "");
+  text_layer_set_overflow_mode(s_RTL_ArtistSecondTextLayer, GTextOverflowModeWordWrap);
+  layer_set_hidden((Layer*)s_RTL_ArtistSecondTextLayer, true);
+
+  text_layer_set_text(s_TrackTextLayer, "");
+  text_layer_set_overflow_mode(s_TrackTextLayer, GTextOverflowModeFill);
+  layer_set_hidden((Layer*)s_TrackTextLayer, true);
+
+  text_layer_set_text(s_RTL_TrackFirstTextLayer, "");
+  text_layer_set_overflow_mode(s_RTL_TrackFirstTextLayer, GTextOverflowModeWordWrap);
+  layer_set_hidden((Layer*)s_RTL_TrackFirstTextLayer, true);
+
+  text_layer_set_text(s_RTL_TrackSecondTextLayer, "");
+  text_layer_set_overflow_mode(s_RTL_TrackSecondTextLayer, GTextOverflowModeWordWrap);
+  layer_set_hidden((Layer*)s_RTL_TrackSecondTextLayer, true);
+  
+  text_layer_set_text(s_AlbumTextLayer, "");
+  text_layer_set_overflow_mode(s_AlbumTextLayer, GTextOverflowModeFill);
+  layer_set_hidden((Layer*)s_AlbumTextLayer, true);
+
+  text_layer_set_text(s_RTL_AlbumFirstTextLayer, "");
+  text_layer_set_overflow_mode(s_RTL_AlbumFirstTextLayer, GTextOverflowModeWordWrap);
+  layer_set_hidden((Layer*)s_RTL_AlbumFirstTextLayer, true);
+
+  text_layer_set_text(s_RTL_AlbumSecondTextLayer, "");
+  text_layer_set_overflow_mode(s_RTL_AlbumSecondTextLayer, GTextOverflowModeWordWrap);
+  layer_set_hidden((Layer*)s_RTL_AlbumSecondTextLayer, true);
+}
+
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Message received!");
+  
+  clearLayers();
   
   // Get the first pair
   Tuple *t = dict_read_first(iterator);
 
   // Process all pairs present
   while(t != NULL) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
     // Process this pair's key
     switch (t->key) {
       // If we got any of the META keys from the companion app, we should be in playing mode.
       case META_ARTIST_KEY:
-        TextLayerSetTextRTLAware(s_ArtistTextLayer, t->value->cstring);
+        TextLayerSetTextRTLAware(s_ArtistTextLayer, s_RTL_ArtistFirstTextLayer, t->value->cstring, false);
         break;
       case META_TRACK_KEY:
-        TextLayerSetTextRTLAware(s_TrackTextLayer, t->value->cstring);
+        TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, t->value->cstring, false);
         break;
       case META_ALBUM_KEY:
-        TextLayerSetTextRTLAware(s_AlbumTextLayer, t->value->cstring);
+        TextLayerSetTextRTLAware(s_AlbumTextLayer, s_RTL_AlbumFirstTextLayer, t->value->cstring, false);
+        break;
+      case META_EXTRA_ARTIST_KEY:
+        TextLayerSetTextRTLAware(s_ArtistTextLayer, s_RTL_ArtistSecondTextLayer, t->value->cstring, true);
+        break;
+      case META_EXTRA_TRACK_KEY :
+        TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackSecondTextLayer, t->value->cstring, true);
+        break;
+      case META_EXTRA_ALBUM_KEY :
+        TextLayerSetTextRTLAware(s_AlbumTextLayer, s_RTL_AlbumSecondTextLayer, t->value->cstring, true);
         break;
     }
 
@@ -207,6 +320,8 @@ static void handle_window_load(Window* window) {
   text_layer_set_overflow_mode(s_AlbumTextLayer, GTextOverflowModeFill);
   text_layer_set_overflow_mode(s_TrackTextLayer, GTextOverflowModeFill);
   text_layer_set_overflow_mode(s_ArtistTextLayer, GTextOverflowModeFill);
+
+  clearLayers();
   
   // init AppMessage API.
   initComms();

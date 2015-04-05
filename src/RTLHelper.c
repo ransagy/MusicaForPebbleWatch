@@ -1,12 +1,20 @@
 #include "RTLHelper.h"
 
-static const char FirstHebChar = (char)1488; //א
-static const char LastHebChar = (char)1514; //ת
+// TODO : Find out why the multibyte start for Hebrew here is 0xD7. Codepage difference?
+static const int multiByte = 0xD7;
+static const int firstHebChar = 0x90; //א
+static const int lastHebChar = 0xAA; //ת
   
 bool TextStartsWithRTL(const char* text) {
-  return text[0] >= FirstHebChar && text[0] <= LastHebChar;
+  // Only if we have any text and its at least a multi-byte char
+  if (strlen(text) > 1) {
+    return multiByte == text[strlen(text)-2] && (text[strlen(text)-1] >= firstHebChar && text[strlen(text)-1] <= lastHebChar);
+  } else {
+    return false;
+  }
 }
 
+// Sad leftover from last attempt to reverse UTF8 strings in C.
 char *utf8rev(char *str)
 {
     /* this assumes that str is valid UTF-8 */
@@ -34,15 +42,14 @@ char *utf8rev(char *str)
     return str;
 }
 
-void TextLayerSetTextRTLAware(TextLayer* layer, const char* text) {
-  if (TextStartsWithRTL(text)) {
-    //char* newText = malloc(strlen(text)+1);
-    //strncpy(newText,text,strlen(text));
-    text_layer_set_text(layer, text); //text_layer_set_text(layer, utf8rev(newText));
-    text_layer_set_text_alignment(layer, GTextAlignmentRight);
-    //free(newText);
+void TextLayerSetTextRTLAware(TextLayer* ltrLayer, TextLayer* rtlLayer, const char* text, bool forceRTL) {
+  if (forceRTL || TextStartsWithRTL(text)) {
+    text_layer_set_text(rtlLayer, text);
+    layer_set_hidden((Layer*)rtlLayer, false);
+    layer_set_hidden((Layer*)ltrLayer, true);
   } else {
-    text_layer_set_text(layer, text);
-    text_layer_set_text_alignment(layer, GTextAlignmentLeft);
+    text_layer_set_text(ltrLayer, text);
+    layer_set_hidden((Layer*)rtlLayer, true);
+    layer_set_hidden((Layer*)ltrLayer, false);
   }
 }
