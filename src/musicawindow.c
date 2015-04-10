@@ -1,8 +1,9 @@
 #include "musicawindow.h"
 #include "RTLHelper.h"
+#include "GeneralUtils.h"
 #include <inttypes.h>
 #include <pebble.h>
-  
+
 static bool bIsPlayingState = false;
 static bool bIsVolumeState = false;
 static GBitmap *s_res_media_volup_icon;
@@ -148,11 +149,14 @@ static void destroy_ui(void) {
 // END AUTO-GENERATED UI CODE
 
 static void sendToPhone(Tuplet *data) {
+  
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Preparing to send data to phone..");
+  
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
   
   if (iter == NULL) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "null iterator received from app_message_outbox_begin!");
+    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "null iterator received from app_message_outbox_begin!");
     return;
   }
 
@@ -251,7 +255,8 @@ static void clearLayers() {
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "Message received!");
+  
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Inbox Message Received!");
   
   clearLayers();
   
@@ -260,7 +265,12 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
   // Process all pairs present
   while(t != NULL) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
+    
+    char buffer[50];
+    snprintf(buffer, 50, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
+    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, buffer);
+    //APP_LOG(APP_LOG_LEVEL_INFO, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
+    
     // Process this pair's key
     switch (t->key) {
       // If we got any of the META keys from the companion app, we should be in playing mode.
@@ -290,18 +300,25 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
-  APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
+  char buffer[50];
+  snprintf(buffer, 50, "Inbox message dropped! reason given is %d", reason);
+  LogMessageWithTimestamp(APP_LOG_LEVEL_ERROR, buffer);
 }
 
 static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
-  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+  char buffer[50];
+  snprintf(buffer, 50, "Outbox send failed! reason given is %d", reason);
+  LogMessageWithTimestamp(APP_LOG_LEVEL_ERROR, buffer);
 }
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Outbox send success!");
 }
 
 static void initComms() {
+  
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Initializing communication!");
+  
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -313,6 +330,9 @@ static void initComms() {
 }
 
 static void handle_window_load(Window* window) {
+  
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Main Window Loading..");
+  
   s_res_media_volup_icon = gbitmap_create_with_resource(RESOURCE_ID_MEDIA_VOLUP_ICON);
   s_res_media_voldown_icon = gbitmap_create_with_resource(RESOURCE_ID_MEDIA_VOLDOWN_ICON);
   
@@ -326,6 +346,8 @@ static void handle_window_load(Window* window) {
   // init AppMessage API.
   initComms();
   
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Asking for initial data from phone..");
+  
   // Fetch existing metadata.
   Tuplet tuple = TupletInteger(ACTION_INIT_KEY, 0);
   sendToPhone(&tuple);
@@ -336,6 +358,8 @@ static void handle_window_unload(Window* window) {
 }
 
 void show_musicawindow(void) {
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Initializing window..");
+  
   initialise_ui();
   
   // Init status bar icon. Has to be done BEFORE pushing to stack, of course :)
