@@ -360,6 +360,9 @@ static void handle_window_unload(Window* window) {
 void show_musicawindow(void) {
   LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Initializing window..");
   
+  // Set BT module to high responsiveness mode (NOTE: GREATLY INCREASES BATTERY USAGE!)
+  app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+  
   initialise_ui();
   
   // Init status bar icon. Has to be done BEFORE pushing to stack, of course :)
@@ -375,4 +378,7 @@ void show_musicawindow(void) {
 
 void hide_musicawindow(void) {
   window_stack_remove(s_window, true);
+  
+  // Reset BT module to normal, low-power mode.
+  app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 }
