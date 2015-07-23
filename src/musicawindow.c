@@ -269,7 +269,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     char buffer[50];
     snprintf(buffer, 50, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
     LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, buffer);
-    //APP_LOG(APP_LOG_LEVEL_INFO, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
     
     // Process this pair's key
     switch (t->key) {
@@ -315,6 +314,19 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Outbox send success!");
 }
 
+static void bluetooth_connection_callback(bool connected) {
+  if (!connected) {
+    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Disconnected!");
+    clearLayers();
+    TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "No BT Connection", false);
+  } else {
+    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Connected!");
+    TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "Loading..", false);
+    Tuplet tuple = TupletInteger(ACTION_INIT_KEY, 0);
+    sendToPhone(&tuple);
+  }
+}
+
 static void initComms() {
   
   LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Initializing communication!");
@@ -343,6 +355,12 @@ static void handle_window_load(Window* window) {
 
   clearLayers();
   
+  if (bluetooth_connection_service_peek()) {
+    TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "Loading..", false);
+  } else {
+    TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "No BT Connection", false);
+  }
+  
   // init AppMessage API.
   initComms();
   
@@ -359,6 +377,9 @@ static void handle_window_unload(Window* window) {
 
 void show_musicawindow(void) {
   LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Initializing window..");
+  
+  // register for BT connection status callback.
+  bluetooth_connection_service_subscribe(bluetooth_connection_callback);
   
   // Set BT module to high responsiveness mode (NOTE: GREATLY INCREASES BATTERY USAGE!)
   app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
