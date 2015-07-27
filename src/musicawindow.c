@@ -315,13 +315,16 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 }
 
 static void bluetooth_connection_callback(bool connected) {
+  // Have to give the connection some time to finish it's re-connection, otherwise communication with phone fails seemingly.
+  psleep(200);
+  
   if (!connected) {
     LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Disconnected!");
     clearLayers();
     TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "No BT Connection", false);
   } else {
     LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Connected!");
-    TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "Loading..", false);
+    TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "Loading..", false);  
     Tuplet tuple = TupletInteger(ACTION_INIT_KEY, 0);
     sendToPhone(&tuple);
   }
@@ -399,6 +402,8 @@ void show_musicawindow(void) {
 
 void hide_musicawindow(void) {
   window_stack_remove(s_window, true);
+  
+  bluetooth_connection_service_unsubscribe();
   
   // Reset BT module to normal, low-power mode.
   app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
