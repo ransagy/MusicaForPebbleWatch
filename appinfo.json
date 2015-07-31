@@ -50,7 +50,7 @@
     "shortName": "Musica",
     "uuid": "71bfc6b0-3969-463d-857b-14ad6004224b",
     "versionCode": 1,
-    "versionLabel": "1.1",
+    "versionLabel": "1.2",
     "watchapp": {
         "watchface": false
     }

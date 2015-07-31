@@ -1,6 +1,7 @@
 #include "musicawindow.h"
 #include "RTLHelper.h"
 #include "GeneralUtils.h"
+#include "ToastLayer.h"
 #include <inttypes.h>
 #include <pebble.h>
 
@@ -8,6 +9,7 @@ static bool bIsPlayingState = false;
 static bool bIsVolumeState = false;
 static GBitmap *s_res_media_volup_icon;
 static GBitmap *s_res_media_voldown_icon;
+static ToastLayer *toast = NULL;
 
 enum AppKeys {
   META_ARTIST_KEY = 0x0,       // TUPLE_CSTRING
@@ -22,6 +24,7 @@ enum AppKeys {
   META_EXTRA_ARTIST_KEY = 0x9, // TUPLE_CSTRING
   META_EXTRA_TRACK_KEY = 0xA,  // TUPLE_CSTRING
   META_EXTRA_ALBUM_KEY = 0xB,  // TUPLE_CSTRING
+  META_VOLSTATE_KEY = 0xC,     // TUPLE_INT32
 };
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
@@ -254,6 +257,19 @@ static void clearLayers() {
   layer_set_hidden((Layer*)s_RTL_AlbumSecondTextLayer, true);
 }
 
+static void showVolumeState(int percentage) {
+  char buffer[30];
+  snprintf(buffer, 30, "Volume at %d percent", percentage);
+  
+  if (toast == NULL) {  
+    toast = toast_layer_create(s_window);
+  } else {
+    toast_layer_hide(toast);
+  }
+  
+  toast_layer_show(toast, buffer, 1000);
+}
+
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   
   LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Inbox Message Received!");
@@ -262,12 +278,18 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   
   // Get the first pair
   Tuple *t = dict_read_first(iterator);
-
+    
   // Process all pairs present
   while(t != NULL) {
     
     char buffer[50];
-    snprintf(buffer, 50, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
+    
+    if (t->type == TUPLE_CSTRING) {
+      snprintf(buffer, 50, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
+    } else if (t->type == TUPLE_INT) {
+      snprintf(buffer, 50, "Got key %"PRIu32" and value %"PRIu32"", t->key, t->value->int32);
+    }
+    
     LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, buffer);
     
     // Process this pair's key
@@ -290,6 +312,9 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         break;
       case META_EXTRA_ALBUM_KEY :
         TextLayerSetTextRTLAware(s_AlbumTextLayer, s_RTL_AlbumSecondTextLayer, t->value->cstring, true);
+        break;
+      case META_VOLSTATE_KEY :
+        showVolumeState(t->value->int32);
         break;
     }
 
