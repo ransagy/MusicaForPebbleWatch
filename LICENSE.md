@@ -1,3 +1,7 @@
+ToastLayer library courtesy of Chris Lewis - https://github.com/C-D-Lewis/ToastLayer/
+
+-------------------------------------------------------------------------
+
 Iconography used were modified of the original icon set provided by courtesy of the PICOL project and licensed under the Creative Commons BY license.
 
 PICOL - PIctorial COmmunication Language - http://picol.org/index.php
