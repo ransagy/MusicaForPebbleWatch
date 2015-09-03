@@ -11,6 +11,10 @@ static GBitmap *s_res_media_volup_icon;
 static GBitmap *s_res_media_voldown_icon;
 static ToastLayer *toast = NULL;
 
+#ifdef PBL_SDK_3
+static StatusBarLayer *s_status_bar;
+#endif
+
 enum AppKeys {
   META_ARTIST_KEY = 0x0,       // TUPLE_CSTRING
   META_TRACK_KEY = 0x1,        // TUPLE_CSTRING
@@ -47,7 +51,10 @@ static ActionBarLayer *s_ActionBarLayer;
 
 static void initialise_ui(void) {
   s_window = window_create();
+  
+  #ifdef PBL_SDK_2
   window_set_fullscreen(s_window, 0);
+  #endif
   
   s_res_gothic_24 = fonts_get_system_font(FONT_KEY_GOTHIC_24);
   s_res_gothic_28_bold = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
@@ -219,39 +226,48 @@ static void s_click_config_provider(void *context) {
   window_long_click_subscribe(BUTTON_ID_SELECT, 0, select_long_click_handler, NULL);
 }
 
-static void clearLayers() {
+static void resetLayers(int topOffset, int widthOffset) {
+  AdjustTextLayerPosition(s_ArtistTextLayer, topOffset, widthOffset);
   text_layer_set_text(s_ArtistTextLayer, "");
   text_layer_set_overflow_mode(s_ArtistTextLayer, GTextOverflowModeFill);
   layer_set_hidden((Layer*)s_ArtistTextLayer, true);
 
+  AdjustTextLayerPosition(s_RTL_ArtistFirstTextLayer, topOffset, widthOffset);
   text_layer_set_text(s_RTL_ArtistFirstTextLayer, "");
   text_layer_set_overflow_mode(s_RTL_ArtistFirstTextLayer, GTextOverflowModeWordWrap);
   layer_set_hidden((Layer*)s_RTL_ArtistFirstTextLayer, true);
 
+  AdjustTextLayerPosition(s_RTL_ArtistSecondTextLayer, topOffset, widthOffset);
   text_layer_set_text(s_RTL_ArtistSecondTextLayer, "");
   text_layer_set_overflow_mode(s_RTL_ArtistSecondTextLayer, GTextOverflowModeWordWrap);
   layer_set_hidden((Layer*)s_RTL_ArtistSecondTextLayer, true);
 
+  AdjustTextLayerPosition(s_TrackTextLayer, topOffset, widthOffset);
   text_layer_set_text(s_TrackTextLayer, "");
   text_layer_set_overflow_mode(s_TrackTextLayer, GTextOverflowModeFill);
   layer_set_hidden((Layer*)s_TrackTextLayer, true);
 
+  AdjustTextLayerPosition(s_RTL_TrackFirstTextLayer, topOffset, widthOffset);
   text_layer_set_text(s_RTL_TrackFirstTextLayer, "");
   text_layer_set_overflow_mode(s_RTL_TrackFirstTextLayer, GTextOverflowModeWordWrap);
   layer_set_hidden((Layer*)s_RTL_TrackFirstTextLayer, true);
 
+  AdjustTextLayerPosition(s_RTL_TrackSecondTextLayer, topOffset, widthOffset);
   text_layer_set_text(s_RTL_TrackSecondTextLayer, "");
   text_layer_set_overflow_mode(s_RTL_TrackSecondTextLayer, GTextOverflowModeWordWrap);
   layer_set_hidden((Layer*)s_RTL_TrackSecondTextLayer, true);
   
+  AdjustTextLayerPosition(s_AlbumTextLayer, topOffset, widthOffset);
   text_layer_set_text(s_AlbumTextLayer, "");
   text_layer_set_overflow_mode(s_AlbumTextLayer, GTextOverflowModeFill);
   layer_set_hidden((Layer*)s_AlbumTextLayer, true);
 
+  AdjustTextLayerPosition(s_RTL_AlbumFirstTextLayer, topOffset, widthOffset);
   text_layer_set_text(s_RTL_AlbumFirstTextLayer, "");
   text_layer_set_overflow_mode(s_RTL_AlbumFirstTextLayer, GTextOverflowModeWordWrap);
   layer_set_hidden((Layer*)s_RTL_AlbumFirstTextLayer, true);
 
+  AdjustTextLayerPosition(s_RTL_AlbumSecondTextLayer, topOffset, widthOffset);
   text_layer_set_text(s_RTL_AlbumSecondTextLayer, "");
   text_layer_set_overflow_mode(s_RTL_AlbumSecondTextLayer, GTextOverflowModeWordWrap);
   layer_set_hidden((Layer*)s_RTL_AlbumSecondTextLayer, true);
@@ -274,7 +290,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   
   LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Inbox Message Received!");
   
-  clearLayers();
+  resetLayers(0,0);
   
   // Get the first pair
   Tuple *t = dict_read_first(iterator);
@@ -345,7 +361,7 @@ static void bluetooth_connection_callback(bool connected) {
   
   if (!connected) {
     LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Disconnected!");
-    clearLayers();
+    resetLayers(0,0);
     TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "No BT Connection", false);
   } else {
     LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Connected!");
@@ -380,9 +396,24 @@ static void handle_window_load(Window* window) {
   text_layer_set_overflow_mode(s_AlbumTextLayer, GTextOverflowModeFill);
   text_layer_set_overflow_mode(s_TrackTextLayer, GTextOverflowModeFill);
   text_layer_set_overflow_mode(s_ArtistTextLayer, GTextOverflowModeFill);
-
-  clearLayers();
   
+  #ifdef PBL_SDK_3
+    // NOTE: 10 is the difference in pixels between ACTION_BAR_WIDTH on SDK2 and SDK3. Not sure if there's a way to calculate this right now.
+    resetLayers(STATUS_BAR_LAYER_HEIGHT,-10);
+  
+    // Set up statusbar ontop of other layers.
+    Layer *window_layer = window_get_root_layer(window);
+    s_status_bar = status_bar_layer_create();
+  
+    // Change the status bar width to make space for the action bar
+    int16_t width = layer_get_bounds(window_layer).size.w - ACTION_BAR_WIDTH;
+    GRect frame = GRect(0, 0, width, STATUS_BAR_LAYER_HEIGHT);
+    layer_set_frame(status_bar_layer_get_layer(s_status_bar), frame);
+    layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
+  #else
+    resetLayers(0,0);
+  #endif
+    
   if (bluetooth_connection_service_peek()) {
     TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "Loading..", false);
   } else {
@@ -401,6 +432,10 @@ static void handle_window_load(Window* window) {
 
 static void handle_window_unload(Window* window) {
   destroy_ui();
+  
+  #ifdef PBL_SDK_3
+  status_bar_layer_destroy(s_status_bar);
+  #endif
 }
 
 void show_musicawindow(void) {
@@ -414,8 +449,10 @@ void show_musicawindow(void) {
   
   initialise_ui();
   
-  // Init status bar icon. Has to be done BEFORE pushing to stack, of course :)
-  window_set_status_bar_icon(s_window, gbitmap_create_with_resource(RESOURCE_ID_HEADPHONES_STATUS_ICON));
+  #ifdef PBL_SDK_2
+    // Init status bar icon. Has to be done BEFORE pushing to stack, of course :)
+    window_set_status_bar_icon(s_window, gbitmap_create_with_resource(RESOURCE_ID_HEADPHONES_STATUS_ICON));
+  #endif
 
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = handle_window_load,

@@ -9,6 +9,16 @@
     "resources": {
         "media": [
             {
+                "file": "images/speaker_silent_16.png",
+                "name": "MEDIA_VOLDOWN_ICON",
+                "type": "png"
+            },
+            {
+                "file": "images/speaker_louder_16.png",
+                "name": "MEDIA_VOLUP_ICON",
+                "type": "png"
+            },
+            {
                 "file": "images/headphones_28.png",
                 "menuIcon": true,
                 "name": "HEADPHONES_ICON",
@@ -20,37 +30,30 @@
                 "type": "png"
             },
             {
-                "file": "images/speaker_silent_16.png",
-                "name": "MEDIA_VOLDOWN_ICON",
-                "type": "png"
-            },
-            {
-                "file": "images/speaker_louder_16.png",
-                "name": "MEDIA_VOLUP_ICON",
-                "type": "png"
-            },
-            {
                 "file": "images/controls_rewind_16.png",
                 "name": "MEDIA_BACKWARD_ICON",
-                "type": "png"
-            },
-            {
-                "file": "images/controls_fast_forward_16.png",
-                "name": "MEDIA_FORWARD_ICON",
                 "type": "png"
             },
             {
                 "file": "images/controls_playpause_16.png",
                 "name": "MEDIA_PLAYPAUSE_ICON",
                 "type": "png"
+            },
+            {
+                "file": "images/controls_fast_forward_16.png",
+                "name": "MEDIA_FORWARD_ICON",
+                "type": "png"
             }
         ]
     },
-    "sdkVersion": "2",
+    "sdkVersion": "3",
     "shortName": "Musica",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
     "uuid": "71bfc6b0-3969-463d-857b-14ad6004224b",
-    "versionCode": 1,
-    "versionLabel": "1.2",
+    "versionLabel": "1.3",
     "watchapp": {
         "watchface": false
     }
