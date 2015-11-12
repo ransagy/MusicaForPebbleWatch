@@ -15,6 +15,22 @@ static ToastLayer *toast = NULL;
 static StatusBarLayer *s_status_bar;
 #endif
 
+enum AppKeys {
+  META_ARTIST_KEY = 0x0,       // TUPLE_CSTRING
+  META_TRACK_KEY = 0x1,        // TUPLE_CSTRING
+  META_ALBUM_KEY = 0x2,        // TUPLE_CSTRING
+  ACTION_PLAYPAUSE_KEY = 0x3,  // TUPLE_INT32
+  ACTION_INIT_KEY = 0x4,       // TUPLE_INT32
+  ACTION_BACKWARD_KEY = 0x5,   // TUPLE_INT32
+  ACTION_FORWARD_KEY = 0x6,    // TUPLE_INT32
+  ACTION_VOLDOWN_KEY = 0x7,    // TUPLE_INT32
+  ACTION_VOLUP_KEY = 0x8,      // TUPLE_INT32
+  META_EXTRA_ARTIST_KEY = 0x9, // TUPLE_CSTRING
+  META_EXTRA_TRACK_KEY = 0xA,  // TUPLE_CSTRING
+  META_EXTRA_ALBUM_KEY = 0xB,  // TUPLE_CSTRING
+  META_VOLSTATE_KEY = 0xC,     // TUPLE_INT32
+};
+
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
 static GFont s_res_gothic_24;
@@ -142,6 +158,23 @@ static void destroy_ui(void) {
 }
 // END AUTO-GENERATED UI CODE
 
+static void sendToPhone(Tuplet *data) {
+  
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Preparing to send data to phone..");
+  
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+  
+  if (iter == NULL) {
+    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "null iterator received from app_message_outbox_begin!");
+    return;
+  }
+
+  dict_write_tuplet(iter, data);
+  dict_write_end(iter);
+  app_message_outbox_send();
+}
+
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
   if (bIsVolumeState) {
     action_bar_layer_set_icon(s_ActionBarLayer, BUTTON_ID_UP, s_res_media_backward_icon);
@@ -156,7 +189,7 @@ static void select_long_click_handler(ClickRecognizerRef recognizer, void *conte
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   Tuplet tuple = TupletInteger(ACTION_PLAYPAUSE_KEY, (bIsPlayingState ? 0 : 1));
-  SendToPhone(&tuple);
+  sendToPhone(&tuple);
   
   // Toggle playing state.
   bIsPlayingState = !bIsPlayingState;
@@ -166,11 +199,11 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
   if (bIsVolumeState) {
     // Handle volume up here.
     Tuplet tuple = TupletInteger(ACTION_VOLUP_KEY, 0);
-    SendToPhone(&tuple);
+    sendToPhone(&tuple);
   } else {
     // Handle prev track here.
     Tuplet tuple = TupletInteger(ACTION_BACKWARD_KEY, 0);
-    SendToPhone(&tuple);
+    sendToPhone(&tuple);
   }
 }
 
@@ -178,11 +211,11 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   if (bIsVolumeState) {
     // Handle volume down here.
     Tuplet tuple = TupletInteger(ACTION_VOLDOWN_KEY, 0);
-    SendToPhone(&tuple);
+    sendToPhone(&tuple);
   } else {
     // Handle next track here.
     Tuplet tuple = TupletInteger(ACTION_FORWARD_KEY, 0);
-    SendToPhone(&tuple);
+    sendToPhone(&tuple);
   }
 }
 
@@ -255,8 +288,7 @@ static void showVolumeState(int percentage) {
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   
-  char buffer[100];
-  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Inbox Message Received!", false);
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Inbox Message Received!");
   
   resetLayers(0,0);
   
@@ -266,13 +298,15 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   // Process all pairs present
   while(t != NULL) {
     
+    char buffer[50];
+    
     if (t->type == TUPLE_CSTRING) {
-      snprintf(buffer, 100, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
+      snprintf(buffer, 50, "Got key %"PRIu32" and value %s", t->key, t->value->cstring);
     } else if (t->type == TUPLE_INT) {
-      snprintf(buffer, 100, "Got key %"PRIu32" and value %"PRIu32"", t->key, t->value->int32);
+      snprintf(buffer, 50, "Got key %"PRIu32" and value %"PRIu32"", t->key, t->value->int32);
     }
     
-    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, buffer, false);
+    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, buffer);
     
     // Process this pair's key
     switch (t->key) {
@@ -308,17 +342,17 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
   char buffer[50];
   snprintf(buffer, 50, "Inbox message dropped! reason given is %d", reason);
-  LogMessageWithTimestamp(APP_LOG_LEVEL_ERROR, buffer, false);
+  LogMessageWithTimestamp(APP_LOG_LEVEL_ERROR, buffer);
 }
 
 static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
   char buffer[50];
   snprintf(buffer, 50, "Outbox send failed! reason given is %d", reason);
-  LogMessageWithTimestamp(APP_LOG_LEVEL_ERROR, buffer, false);
+  LogMessageWithTimestamp(APP_LOG_LEVEL_ERROR, buffer);
 }
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
-  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Outbox send success!", false);
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Outbox send success!");
 }
 
 static void bluetooth_connection_callback(bool connected) {
@@ -326,18 +360,21 @@ static void bluetooth_connection_callback(bool connected) {
   psleep(200);
   
   if (!connected) {
-    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Disconnected!", false);
+    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Disconnected!");
     resetLayers(0,0);
     TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "No BT Connection", false);
   } else {
-    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Connected!", false);
+    LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "BT Connected!");
     TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "Loading..", false);  
     Tuplet tuple = TupletInteger(ACTION_INIT_KEY, 0);
-    SendToPhone(&tuple);
+    sendToPhone(&tuple);
   }
 }
 
 static void initComms() {
+  
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Initializing communication!");
+  
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -346,13 +383,11 @@ static void initComms() {
   
   // Open AppMessage comms.
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-  
-  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Initialized communication.", false);
 }
 
 static void handle_window_load(Window* window) {
   
-  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Main Window Loading..", false);
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Main Window Loading..");
   
   s_res_media_volup_icon = gbitmap_create_with_resource(RESOURCE_ID_MEDIA_VOLUP_ICON);
   s_res_media_voldown_icon = gbitmap_create_with_resource(RESOURCE_ID_MEDIA_VOLDOWN_ICON);
@@ -385,11 +420,14 @@ static void handle_window_load(Window* window) {
     TextLayerSetTextRTLAware(s_TrackTextLayer, s_RTL_TrackFirstTextLayer, "No BT Connection", false);
   }
   
-  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Asking for initial data from phone..", false);
+  // init AppMessage API.
+  initComms();
+  
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Asking for initial data from phone..");
   
   // Fetch existing metadata.
   Tuplet tuple = TupletInteger(ACTION_INIT_KEY, 0);
-  SendToPhone(&tuple);
+  sendToPhone(&tuple);
 }
 
 static void handle_window_unload(Window* window) {
@@ -401,6 +439,8 @@ static void handle_window_unload(Window* window) {
 }
 
 void show_musicawindow(void) {
+  LogMessageWithTimestamp(APP_LOG_LEVEL_DEBUG, "Initializing window..");
+  
   // register for BT connection status callback.
   bluetooth_connection_service_subscribe(bluetooth_connection_callback);
   
@@ -414,9 +454,6 @@ void show_musicawindow(void) {
     window_set_status_bar_icon(s_window, gbitmap_create_with_resource(RESOURCE_ID_HEADPHONES_STATUS_ICON));
   #endif
 
-  // init AppMessage API.
-  initComms();
-  
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = handle_window_load,
     .unload = handle_window_unload,
