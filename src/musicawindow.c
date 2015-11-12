@@ -356,7 +356,7 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 }
 
 static void bluetooth_connection_callback(bool connected) {
-  // Have to give the connection some time to finish it's re-connection, otherwise communication with phone fails seemingly.
+  // Have to give the connection some time to finish it's re-connection, otherwise communication with phone fails seemingly..
   psleep(200);
   
   if (!connected) {
